@@ -2,9 +2,9 @@ name: Android CI
 
 on:
   push:
-    branches: [ "aviator-bot-initial-2384261573427160728" ]
+    branches: [ "aviator-bot-initial-18212117235032624947" ]
   pull_request:
-    branches: [ "aviator-bot-initial-2384261573427160728" ]
+    branches: [ "aviator-bot-initial-18212117235032624947" ]
 
 jobs:
   build:
