@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">AviatorBot</string>
+    <string name="btn_live">Live</string>
+    <string name="btn_demo">Demo</string>
+    <string name="btn_settings">Settings</string>
+    <string name="status_waiting">Waiting...</string>
+    <string name="status_active_live">ACTIVE (LIVE)</string>
+    <string name="status_active_demo">ACTIVE (DEMO)</string>
+    <string name="log_title">Bot Logic Logs</string>
+</resources>
