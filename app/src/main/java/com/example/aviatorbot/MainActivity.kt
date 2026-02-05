@@ -1,5 +1,6 @@
 package com.example.aviatorbot
 
+import android.content.Intent
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -7,13 +8,17 @@ import android.webkit.WebSettings
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.TextView
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var btnStart: Button
     private lateinit var btnMode: Button
+    private lateinit var btnSettings: Button
     private lateinit var tvStatus: TextView
+    private lateinit var tvLogs: TextView
 
     private var isBotRunning = false
     private var isLiveMode = false
@@ -25,7 +30,9 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webview)
         btnStart = findViewById(R.id.btn_start)
         btnMode = findViewById(R.id.btn_mode)
+        btnSettings = findViewById(R.id.btn_settings)
         tvStatus = findViewById(R.id.tv_status)
+        tvLogs = findViewById(R.id.tv_logs)
 
         setupWebView()
         setupControls()
@@ -41,25 +48,30 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(WebAppInterface(this,
             onLog = { msg ->
                 runOnUiThread {
-                    tvStatus.text = "Log: $msg"
+                    appendLog(msg)
                 }
             },
             onHistory = { history ->
-                // history might be comma separated values from JS
-                val values = history.split(",").mapNotNull {
-                    it.replace("x", "").trim().toDoubleOrNull()
-                }
-                values.forEach { StrategyEngine.onRoundCrash(it) }
-
-                runOnUiThread {
-                    tvStatus.text = StrategyEngine.getStats()
-
-                    if (isBotRunning && isLiveMode) {
-                        if (StrategyEngine.shouldBet()) {
-                            // trigger bet
-                            webView.evaluateJavascript("window.botClickBet();", null)
+                // If JS sends history (comma separated)
+                 try {
+                     val values = history.split(",").mapNotNull {
+                        it.replace("x", "").trim().toDoubleOrNull()
+                    }
+                    if (values.isNotEmpty()) {
+                        values.forEach { StrategyEngine.onRoundCrash(it) }
+                        runOnUiThread {
+                            appendLog("History Sync: Added ${values.size} rounds.")
+                            // Refresh target
+                            updateBotState()
                         }
                     }
+                 } catch (e: Exception) {
+                     runOnUiThread { appendLog("Error parsing history: ${e.message}") }
+                 }
+            },
+            onMultiplier = { valueStr ->
+                runOnUiThread {
+                     tvStatus.text = "Status: ${if (isBotRunning) "Running" else "Idle"} - $valueStr"
                 }
             }
         ), "Android")
@@ -67,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
-                tvStatus.text = "Loaded: $url"
+                appendLog("Loaded: $url")
                 injectBotScript()
             }
         }
@@ -77,52 +89,63 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectBotScript() {
-        val js = """
-            (function() {
-                if (window.botInjected) return;
-                window.botInjected = true;
-                window.Android.log("Bot Injected via JS");
+        try {
+            val inputStream = resources.openRawResource(R.raw.bot_script)
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            val js = reader.use { it.readText() }
 
-                function scan() {
-                    // Scan for 'Bet' buttons
-                    // We look for green buttons with text 'Bet'
-                    // This is a heuristic based on the screenshot
+            webView.evaluateJavascript(js, null)
+            appendLog("Bot script injected.")
 
-                    let buttons = Array.from(document.querySelectorAll('button, div[role="button"], .btn'));
-                    let betBtn = buttons.find(b => {
-                        let text = b.innerText || "";
-                        return text.includes("Bet") && b.offsetHeight > 0; // Visible
-                    });
+            // Sync initial state
+            updateBotState()
+        } catch (e: Exception) {
+            appendLog("Error reading bot script: ${e.message}")
+        }
+    }
 
-                    if (betBtn) {
-                         // found
-                    }
-                }
+    private fun updateBotState() {
+        val target = StrategyEngine.getNextTarget()
+        val jsCommand = "if(window.updateBotParams) window.updateBotParams($isBotRunning, $target);"
+        webView.evaluateJavascript(jsCommand, null)
+        appendLog("Updated Bot: Running=$isBotRunning, Target=$target")
 
-                setInterval(scan, 2000);
-            })();
-        """.trimIndent()
-        webView.evaluateJavascript(js, null)
+        // Also update stats log
+        appendLog(StrategyEngine.getStats())
     }
 
     private fun setupControls() {
         btnStart.setOnClickListener {
             isBotRunning = !isBotRunning
-            btnStart.text = if (isBotRunning) "Stop Bot" else "Start Bot"
-            updateStatus()
+            btnStart.text = if (isBotRunning) "Stop" else "Start"
+            updateBotState()
         }
 
         btnMode.setOnClickListener {
             isLiveMode = !isLiveMode
             btnMode.text = if (isLiveMode) "Mode: LIVE" else "Mode: Demo"
-            updateStatus()
+            appendLog("Mode switched to ${if (isLiveMode) "LIVE" else "Demo"}")
+        }
+
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
-    private fun updateStatus() {
-        val state = if (isBotRunning) "Running" else "Idle"
-        val mode = if (isLiveMode) "LIVE" else "Demo"
-        tvStatus.text = "Status: $state ($mode)"
+    private fun appendLog(msg: String) {
+        val current = tvLogs.text.toString()
+        // Keep log size manageable
+        if (current.length > 5000) {
+            tvLogs.text = msg + "\n" + current.take(4000) + "..."
+        } else {
+            tvLogs.text = msg + "\n" + current
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Update bot with potentially new settings
+        updateBotState()
     }
 
     override fun onBackPressed() {

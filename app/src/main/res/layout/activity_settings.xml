@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bot Settings"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Base Target -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Base Target Multiplier"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/et_target"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:hint="1.20"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="The multiplier to cash out at (if strategy is off, or as base)."
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Smart Strategy -->
+        <Switch
+            android:id="@+id/sw_smart_strategy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Smart Strategy"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="If enabled, the bot will adjust the target based on history variance."
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Max Loss Streak -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stop after Loss Streak"
+            android:textStyle="bold"/>
+
+        <EditText
+            android:id="@+id/et_loss_streak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:hint="5"/>
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Settings"
+            android:layout_marginTop="32dp"/>
+
+    </LinearLayout>
+</ScrollView>
