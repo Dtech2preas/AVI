@@ -6,7 +6,8 @@ import android.webkit.JavascriptInterface
 class WebAppInterface(
     private val context: Context,
     private val onLog: (String) -> Unit,
-    private val onHistory: (String) -> Unit
+    private val onHistory: (String) -> Unit,
+    private val onMultiplier: (String) -> Unit
 ) {
 
     @JavascriptInterface
@@ -22,6 +23,6 @@ class WebAppInterface(
     @JavascriptInterface
     fun onMultiplier(value: String) {
         // value might be "1.23x"
-        onLog("Multiplier: $value")
+        onMultiplier.invoke(value)
     }
 }
